@@ -1,56 +1,109 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useState } from 'react';
+import { useState } from "react";
 import {
-  Alert, StyleSheet, Text, TextInput,
-  TouchableOpacity, View
-} from 'react-native';
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function RegisterScreen({ navigation }) {
-  const [fullName, setFullName] = useState('');
-  const [idNumber, setIdNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [address, setAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     // Validar que todos los campos estén llenos
-    if (!fullName || !idNumber || !email || !password) {
-      Alert.alert('Error', 'Por favor llena todos los campos');
+    if (
+      !fullName ||
+      !birthDate ||
+      !address ||
+      !phoneNumber ||
+      !email ||
+      !password
+    ) {
+      Alert.alert("Error", "Por favor llena todos los campos");
       return;
     }
 
-    // Validar correo que contenga @gmail.com
-    if (!email.includes('@gmail.com')) {
-      Alert.alert('Error', 'El correo debe ser un Gmail válido');
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert("Error", "Por favor ingresa un email válido");
       return;
     }
 
-    // Validar número de identificación máximo 10 dígitos
-    if (idNumber.length > 10) {
-      Alert.alert('Error', 'El número de identificación debe tener máximo 10 dígitos');
+    // Validar número de teléfono (solo números)
+    if (!/^\d+$/.test(phoneNumber)) {
+      Alert.alert("Error", "El número de teléfono debe contener solo números");
       return;
     }
 
     // Validar contraseña: mínimo 8 caracteres, al menos una mayúscula y un número
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(password)) {
-      Alert.alert('Error', 'La contraseña debe tener mínimo 8 caracteres, incluir una mayúscula y un número');
+      Alert.alert(
+        "Error",
+        "La contraseña debe tener mínimo 8 caracteres, incluir una mayúscula y un número"
+      );
       return;
     }
 
+    // Validar formato de fecha (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(birthDate)) {
+      Alert.alert(
+        "Error",
+        "La fecha debe tener formato YYYY-MM-DD (ej: 1990-01-15)"
+      );
+      return;
+    }
+
+    setLoading(true);
     try {
-      const user = { fullName, idNumber, email, password };
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      Alert.alert('Éxito', 'Usuario registrado correctamente');
-      navigation.navigate('Login'); // vuelve al login
-    } catch (err) {
-      console.log(err);
-      Alert.alert('Error', 'Ocurrió un error al registrarse');
+      const response = await fetch("http://localhost:3000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          NomPaci: fullName,
+          FeNaci: birthDate,
+          DireCasa: address,
+          NumCel: parseInt(phoneNumber),
+          Email: email,
+          Contraseña: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Éxito", "Paciente registrado correctamente", [
+          { text: "OK", onPress: () => navigation.navigate("Login") },
+        ]);
+      } else {
+        Alert.alert("Error", data.error || "Error al registrar paciente");
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      Alert.alert(
+        "Error",
+        "No se pudo conectar con el servidor. Verifica que el API esté funcionando."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>Registro</Text>
+      <Text style={styles.brand}>Registro de Paciente</Text>
 
       <TextInput
         placeholder="Nombre completo"
@@ -60,16 +113,31 @@ export default function RegisterScreen({ navigation }) {
       />
 
       <TextInput
-        placeholder="Número de identificación"
+        placeholder="Fecha de nacimiento (YYYY-MM-DD)"
+        style={styles.input}
+        value={birthDate}
+        onChangeText={setBirthDate}
+        maxLength={10}
+      />
+
+      <TextInput
+        placeholder="Dirección de casa"
+        style={styles.input}
+        value={address}
+        onChangeText={setAddress}
+        multiline
+      />
+
+      <TextInput
+        placeholder="Número de celular"
         style={styles.input}
         keyboardType="numeric"
-        value={idNumber}
+        value={phoneNumber}
         onChangeText={(text) => {
-          // Solo permite números y máximo 10 dígitos
-          const numericText = text.replace(/[^0-9]/g, '');
-          setIdNumber(numericText.slice(0, 10));
+          // Solo permite números
+          const numericText = text.replace(/[^0-9]/g, "");
+          setPhoneNumber(numericText);
         }}
-        maxLength={10}
       />
 
       <TextInput
@@ -89,17 +157,50 @@ export default function RegisterScreen({ navigation }) {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.btnPrimary} onPress={handleRegister}>
-        <Text style={styles.btnText}>Registrar</Text>
+      <TouchableOpacity
+        style={[styles.btnPrimary, loading && styles.btnDisabled]}
+        onPress={handleRegister}
+        disabled={loading}
+      >
+        <Text style={styles.btnText}>
+          {loading ? "Registrando..." : "Registrar Paciente"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1, justifyContent:'center', padding:20, backgroundColor:'#f7f9fc' },
-  brand: { fontSize:28, fontWeight:'700', textAlign:'center', marginBottom:24, color:'#1E7CFF' },
-  input: { width:'100%', height:48, borderWidth:1, borderColor:'#ddd', borderRadius:8, paddingHorizontal:12, marginBottom:12, backgroundColor:'#fff' },
-  btnPrimary: { backgroundColor:'#1E7CFF', paddingVertical:12, borderRadius:8, alignItems:'center', marginTop:6 },
-  btnText: { color:'#fff', fontWeight:'700' }
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#f7f9fc",
+  },
+  brand: {
+    fontSize: 28,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 24,
+    color: "#1E7CFF",
+  },
+  input: {
+    width: "100%",
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+  },
+  btnPrimary: {
+    backgroundColor: "#1E7CFF",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 6,
+  },
+  btnDisabled: { backgroundColor: "#cccccc" },
+  btnText: { color: "#fff", fontWeight: "700" },
 });
