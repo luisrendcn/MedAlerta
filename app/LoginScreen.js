@@ -68,6 +68,7 @@ export default function LoginScreen({ navigation }) {
       {/* Campos */}
       <TextInput
         placeholder="usuario@correo.com"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
@@ -77,6 +78,7 @@ export default function LoginScreen({ navigation }) {
 
       <TextInput
         placeholder="Contraseña"
+        placeholderTextColor="#999"
         style={styles.input}
         secureTextEntry
         value={password}

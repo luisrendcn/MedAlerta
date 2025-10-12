@@ -96,6 +96,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Nombre completo"
+        placeholderTextColor="#999"
         style={styles.input}
         value={fullName}
         onChangeText={setFullName}
@@ -103,6 +104,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Fecha de nacimiento (YYYY-MM-DD)"
+        placeholderTextColor="#999"
         style={styles.input}
         value={birthDate}
         onChangeText={setBirthDate}
@@ -111,6 +113,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Dirección de casa"
+        placeholderTextColor="#999"
         style={styles.input}
         value={address}
         onChangeText={setAddress}
@@ -119,6 +122,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Número de celular"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="numeric"
         value={phoneNumber}
@@ -131,6 +135,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Correo electrónico"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
@@ -140,6 +145,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Contraseña"
+        placeholderTextColor="#999"
         style={styles.input}
         secureTextEntry
         value={password}

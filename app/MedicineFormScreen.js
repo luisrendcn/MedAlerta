@@ -72,18 +72,21 @@ export default function MedicineFormScreen() {
 
       <TextInput
         placeholder="Nombre del medicamento"
+        placeholderTextColor="#999"
         value={nombre}
         onChangeText={setNombre}
         style={styles.input}
       />
       <TextInput
         placeholder="Dosis (ej. 1 tableta)"
+        placeholderTextColor="#999"
         value={dosis}
         onChangeText={setDosis}
         style={styles.input}
       />
       <TextInput
         placeholder="Horario (ej. 08:00 AM)"
+        placeholderTextColor="#999"
         value={horario}
         onChangeText={setHorario}
         style={styles.input}
