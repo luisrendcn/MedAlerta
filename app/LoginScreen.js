@@ -94,9 +94,17 @@ export default function LoginScreen({ navigation }) {
         </Text>
       </TouchableOpacity>
 
+      {/* 🔒 Botón pequeño de superusuario */}
+      <TouchableOpacity
+        onPress={() => navigation.replace("MedicineList")}
+        style={styles.superUserButton}
+      >
+        <Text style={styles.superUserText}>Entrar como superusuario</Text>
+      </TouchableOpacity>
+
+
       {/* Fila de botones secundarios */}
       <View style={styles.row}>
-        {/* Botón Registrarse */}
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => navigation.navigate("Register")}
@@ -104,7 +112,6 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.secondaryButtonText}>Registrarse</Text>
         </TouchableOpacity>
 
-        {/* Botón Olvidó contraseña */}
         <TouchableOpacity style={styles.secondaryButton}>
           <Text style={styles.secondaryButtonText}>¿Olvidó su contraseña?</Text>
         </TouchableOpacity>
@@ -112,7 +119,7 @@ export default function LoginScreen({ navigation }) {
 
       {/* Footer */}
       <Text style={styles.footer}>
-        © 2025 MedAlerta. proyecto de Ingenieria de Software.
+        © 2025 MedAlerta. Proyecto de Ingeniería de Software.
       </Text>
     </View>
   );
@@ -149,8 +156,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: "#fff",
   },
-
-  // 🔵 Botón principal
   loginButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 12,
@@ -166,8 +171,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-
-  // 🔵 Botones secundarios en fila
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -187,8 +190,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-
-  // Footer
+  // 🔹 Botón de superusuario
+  superUserButton: {
+    alignSelf: "center",
+    marginTop: 10,
+    opacity: 0.6,
+  },
+  superUserText: {
+    fontSize: 12,
+    color: "#999",
+    textDecorationLine: "underline",
+  },
   footer: {
     marginTop: 30,
     fontSize: 12,
