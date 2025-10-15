@@ -2,13 +2,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { 
+  pedirPermisoNotificaciones, 
+  programarRecordatorio, 
+  cancelarRecordatorio 
+} from "../config/notificationService";
 
 export default function MedicineFormScreen() {
   const [nombre, setNombre] = useState("");
@@ -34,20 +39,49 @@ export default function MedicineFormScreen() {
     }
 
     try {
+      // Solicitar permisos de notificación
+      const tienePermisos = await pedirPermisoNotificaciones();
+      if (!tienePermisos) {
+        Alert.alert(
+          "Permisos requeridos",
+          "Para recibir recordatorios necesitas habilitar las notificaciones en la configuración de tu dispositivo."
+        );
+      }
+
       const data = await AsyncStorage.getItem("@medicamentos");
       let lista = data ? JSON.parse(data) : [];
+      let medicamentoId = Date.now();
 
       if (medicamentoEdit) {
         // Si estamos editando un medicamento existente
+        medicamentoId = medicamentoEdit.id;
+        
+        // Cancelar la notificación anterior si existe
+        if (medicamentoEdit.notificationId) {
+          await cancelarRecordatorio(medicamentoEdit.notificationId);
+        }
+
         lista = lista.map((m) =>
           m.id === medicamentoEdit.id ? { ...m, nombre, dosis, horario } : m
         );
       } else {
         // Si estamos agregando uno nuevo
-        lista.push({ id: Date.now(), nombre, dosis, horario });
+        lista.push({ id: medicamentoId, nombre, dosis, horario });
       }
 
+      // Programar nueva notificación
+      let notificationId = null;
+      if (tienePermisos) {
+        notificationId = await programarRecordatorio(nombre, horario);
+      }
+
+      // Actualizar el medicamento con el ID de notificación
+      lista = lista.map((m) =>
+        m.id === medicamentoId ? { ...m, notificationId } : m
+      );
+
       await AsyncStorage.setItem("@medicamentos", JSON.stringify(lista));
+      
       Alert.alert(
         "Éxito",
         medicamentoEdit
