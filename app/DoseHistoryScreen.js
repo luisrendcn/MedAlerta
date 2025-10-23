@@ -1,18 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
   FlatList,
-  TouchableOpacity,
-  Alert,
   RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import {
-  obtenerHistorialTomas,
-  obtenerEstadisticasTomas,
   eliminarToma,
-} from "../config/notificationService";
+  obtenerEstadisticasTomas,
+  obtenerHistorialTomas,
+} from "./NotificationService";
 
 export default function DoseHistoryScreen({ navigation }) {
   const [historial, setHistorial] = useState([]);

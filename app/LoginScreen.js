@@ -98,7 +98,9 @@ export default function LoginScreen({ navigation }) {
 
       {/* 🔒 Botón pequeño de superusuario */}
       <TouchableOpacity
-        onPress={() => navigation.replace("MedicineList")}
+        onPress={() =>
+          navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] })
+        }
         style={styles.superUserButton}
       >
         <Text style={styles.superUserText}>Entrar como superusuario</Text>

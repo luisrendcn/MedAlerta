@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { registrarToma, obtenerTomasPorMedicamento, cancelarRecordatorio } from "../config/notificationService";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { cancelarRecordatorio, registrarToma } from "./NotificationService";
 
 export default function MedicineListScreen({ navigation }) {
   const [medicines, setMedicines] = useState([]);
