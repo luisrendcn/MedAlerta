@@ -1,7 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Alert } from "react-native";
 
-// Configuración general de las notificaciones
+/* ==========================================================
+   ⚙️ CONFIGURACIÓN GENERAL DE NOTIFICACIONES
+========================================================== */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -10,7 +13,9 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// ✅ Solicita permiso para enviar notificaciones
+/* ==========================================================
+   🟢 SOLICITAR PERMISOS DE NOTIFICACIÓN
+========================================================== */
 export async function pedirPermisoNotificaciones() {
   try {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -23,12 +28,14 @@ export async function pedirPermisoNotificaciones() {
     }
     return true;
   } catch (error) {
-    console.error("Error al pedir permisos de notificaciones:", error);
+    console.error("❌ Error al pedir permisos de notificaciones:", error);
     return false;
   }
 }
 
-// ✅ Programa una notificación
+/* ==========================================================
+   🕒 PROGRAMAR RECORDATORIO
+========================================================== */
 export async function programarRecordatorio(nombre, horario) {
   try {
     const [horaStr, minutoStr] = horario.replace(/[^0-9:]/g, "").split(":");
@@ -63,17 +70,111 @@ export async function programarRecordatorio(nombre, horario) {
     console.log("✅ Notificación programada con ID:", id);
     return id;
   } catch (error) {
-    console.error("Error al programar recordatorio:", error);
+    console.error("❌ Error al programar recordatorio:", error);
     return null;
   }
 }
 
-// ✅ Cancela una notificación específica
+/* ==========================================================
+   🧹 CANCELAR RECORDATORIO
+========================================================== */
 export async function cancelarRecordatorio(id) {
   try {
     await Notifications.cancelScheduledNotificationAsync(id);
     console.log("🗑️ Notificación cancelada:", id);
   } catch (error) {
-    console.error("Error al cancelar recordatorio:", error);
+    console.error("❌ Error al cancelar recordatorio:", error);
+  }
+}
+
+/* ==========================================================
+   📋 OBTENER HISTORIAL DE TOMAS
+========================================================== */
+export async function obtenerHistorialTomas() {
+  try {
+    const historial = await AsyncStorage.getItem("historialTomas");
+    return historial ? JSON.parse(historial) : [];
+  } catch (error) {
+    console.error("❌ Error al obtener historial:", error);
+    return [];
+  }
+}
+
+/* ==========================================================
+   ✍️ REGISTRAR TOMA EN EL HISTORIAL
+========================================================== */
+export async function registrarToma(medicamento) {
+  try {
+    const data = await AsyncStorage.getItem("historialTomas");
+    let historial = data ? JSON.parse(data) : [];
+
+    const nuevaToma = {
+      id: Date.now(),
+      medicamentoNombre: medicamento.nombre, // 🔹 campo correcto para el historial
+      dosis: medicamento.dosis || "No especificada", // 🔹 agregado para coherencia
+      fecha: new Date().toISOString(), // 🔹 formato ISO válido (evita "Invalid Date")
+    };
+
+    historial.push(nuevaToma);
+    await AsyncStorage.setItem("historialTomas", JSON.stringify(historial));
+
+    console.log("✅ Toma registrada correctamente:", nuevaToma);
+  } catch (error) {
+    console.error("❌ Error al registrar toma:", error);
+    throw error;
+  }
+}
+
+/* ==========================================================
+   🗑️ ELIMINAR TOMA DEL HISTORIAL
+========================================================== */
+export async function eliminarToma(id) {
+  try {
+    const data = await AsyncStorage.getItem("historialTomas");
+    if (!data) return false;
+
+    const historial = JSON.parse(data);
+    const nuevoHistorial = historial.filter((toma) => toma.id !== id);
+
+    await AsyncStorage.setItem("historialTomas", JSON.stringify(nuevoHistorial));
+    console.log("🗑️ Toma eliminada:", id);
+    return true;
+  } catch (error) {
+    console.error("❌ Error al eliminar toma:", error);
+    return false;
+  }
+}
+
+/* ==========================================================
+   📊 OBTENER ESTADÍSTICAS DE TOMAS
+========================================================== */
+export async function obtenerEstadisticasTomas() {
+  try {
+    const historial = await obtenerHistorialTomas();
+    if (!historial || historial.length === 0) {
+      return { totalTomas: 0, tomasHoy: 0, tomasEstaSemana: 0, ultimaToma: null };
+    }
+
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+
+    const totalTomas = historial.length;
+    const tomasHoy = historial.filter(
+      (t) => new Date(t.fecha).toDateString() === hoy.toDateString()
+    ).length;
+
+    const tomasEstaSemana = historial.filter(
+      (t) => new Date(t.fecha) >= inicioSemana
+    ).length;
+
+    const ultimaToma = historial.reduce((a, b) =>
+      new Date(a.fecha) > new Date(b.fecha) ? a : b
+    );
+
+    return { totalTomas, tomasHoy, tomasEstaSemana, ultimaToma };
+  } catch (error) {
+    console.error("❌ Error al obtener estadísticas:", error);
+    return { totalTomas: 0, tomasHoy: 0, tomasEstaSemana: 0, ultimaToma: null };
   }
 }

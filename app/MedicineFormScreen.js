@@ -22,6 +22,7 @@ export default function MedicineFormScreen() {
   const route = useRoute();
   const navigation = useNavigation();
 
+  // ✅ Si se envía un medicamento desde la pantalla de lista, se edita
   const medicamentoEdit = route.params?.medicamento;
 
   useEffect(() => {
@@ -39,53 +40,57 @@ export default function MedicineFormScreen() {
     }
 
     try {
-      // 1️⃣ Pedir permiso de notificaciones
+      // 1️⃣ Pedir permisos para notificaciones
       const tienePermisos = await pedirPermisoNotificaciones();
       if (!tienePermisos) {
         Alert.alert(
           "Permisos requeridos",
-          "Para recibir recordatorios necesitas habilitar las notificaciones en la configuración de tu dispositivo."
+          "Debes habilitar las notificaciones para recibir recordatorios."
         );
       }
 
-      // 2️⃣ Leer lista de medicamentos almacenados
+      // 2️⃣ Cargar lista existente
       const data = await AsyncStorage.getItem("@medicamentos");
       let lista = data ? JSON.parse(data) : [];
+
       let medicamentoId = medicamentoEdit ? medicamentoEdit.id : Date.now();
 
-      // 3️⃣ Si estamos editando, actualizar datos y cancelar notificación previa
+      // 3️⃣ Si es edición, actualizar el existente
       if (medicamentoEdit) {
         if (medicamentoEdit.notificationId) {
           await cancelarRecordatorio(medicamentoEdit.notificationId);
         }
+
         lista = lista.map((m) =>
           m.id === medicamentoEdit.id ? { ...m, nombre, dosis, horario } : m
         );
       } else {
+        // Nuevo medicamento
         lista.push({ id: medicamentoId, nombre, dosis, horario });
       }
 
-      // 4️⃣ Programar nueva notificación (alerta sonora y visual)
+      // 4️⃣ Programar nueva notificación
       let notificationId = null;
       if (tienePermisos) {
         notificationId = await programarRecordatorio(nombre, horario);
       }
 
-      // 5️⃣ Actualizar medicamento con ID de notificación
+      // 5️⃣ Actualizar el medicamento con el ID de notificación
       lista = lista.map((m) =>
         m.id === medicamentoId ? { ...m, notificationId } : m
       );
 
-      // 6️⃣ Guardar lista actualizada en AsyncStorage
+      // 6️⃣ Guardar en AsyncStorage
       await AsyncStorage.setItem("@medicamentos", JSON.stringify(lista));
 
       Alert.alert(
-        "Éxito",
+        "✅ Éxito",
         medicamentoEdit
           ? "Medicamento actualizado correctamente."
           : "Medicamento guardado correctamente."
       );
 
+      // ✅ Redirigir correctamente a la lista
       navigation.navigate("MedicineList");
     } catch (error) {
       console.error("Error al guardar medicamento:", error);
@@ -96,7 +101,6 @@ export default function MedicineFormScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        {"\n\n"}
         {medicamentoEdit ? "Editar Medicamento" : "Registrar Medicamento"}
       </Text>
 
