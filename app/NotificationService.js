@@ -1,23 +1,42 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from "expo-notifications";
 import { Alert, Platform } from "react-native";
+
+// Nota: no importamos 'expo-notifications' en top-level para evitar warnings en web.
+async function getNotifications() {
+  if (Platform.OS === 'web') return null;
+  const Notifications = await import('expo-notifications');
+  return Notifications;
+}
 
 /* ==========================================================
    ⚙️ CONFIGURACIÓN GENERAL DE NOTIFICACIONES
 ========================================================== */
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Configurar handler sólo en plataformas nativas
+(async () => {
+  try {
+    const Notifications = await getNotifications();
+    if (Notifications && Notifications.setNotificationHandler) {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+    }
+  } catch (err) {
+    console.warn('NotificationService: no se pudo establecer handler (posible web):', err && err.message);
+  }
+})();
 
 /* ==========================================================
    🟢 SOLICITAR PERMISOS DE NOTIFICACIÓN
 ========================================================== */
 export async function pedirPermisoNotificaciones() {
+  if (Platform.OS === 'web') return false; // no aplicable en web
   try {
+    const Notifications = await getNotifications();
+    if (!Notifications || !Notifications.requestPermissionsAsync) return false;
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
@@ -57,6 +76,11 @@ export async function programarRecordatorio(nombre, horario) {
       horaNotificacion.setDate(horaNotificacion.getDate() + 1);
     }
 
+    if (Platform.OS === 'web') {
+      console.warn('programarRecordatorio: notificaciones no soportadas en web');
+      return null;
+    }
+    const Notifications = await getNotifications();
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: "💊 Recordatorio de Medicamento",
@@ -83,10 +107,15 @@ export async function programarRecordatorio(nombre, horario) {
 ========================================================== */
 export async function cancelarRecordatorio(id) {
   try {
+    if (Platform.OS === 'web') return false;
+    const Notifications = await getNotifications();
+    if (!Notifications || !Notifications.cancelScheduledNotificationAsync) return false;
     await Notifications.cancelScheduledNotificationAsync(id);
     console.log("🗑️ Notificación cancelada:", id);
+    return true;
   } catch (error) {
     console.error("❌ Error al cancelar recordatorio:", error);
+    return false;
   }
 }
 

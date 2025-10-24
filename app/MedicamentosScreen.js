@@ -1,10 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  cancelScheduledNotificationAsync,
-  scheduleNotificationAsync,
-} from "expo-notifications";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Platform,
   Alert,
   FlatList,
   StyleSheet,
@@ -113,8 +110,7 @@ export default function MedicamentosScreen({ navigation }) {
         },
         body: JSON.stringify(body),
       });
-
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
         setMessage(
@@ -126,57 +122,59 @@ export default function MedicamentosScreen({ navigation }) {
         resetForm();
         loadMedicamentos();
 
-        // Schedule notification
-        const data = response.data || (await response.json());
-        const [hour, minute] = horario.split(":").map(Number);
-        const identifier = `medicamento-${data.idMedica || editingId}`;
+        // Schedule notification only on native platforms
+        if (Platform.OS !== 'web') {
+          try {
+            const Notifications = await import('expo-notifications');
+            const [hour, minute] = horario.split(":").map(Number);
+            const identifier = `medicamento-${data.idMedica || editingId}`;
 
-        // Cancel previous if editing
-        if (isEditing) {
-          await cancelScheduledNotificationAsync(identifier);
-          await cancelScheduledNotificationAsync(`${identifier}-followup`);
+            // Cancel previous if editing
+            if (isEditing) {
+              await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => {});
+              await Notifications.cancelScheduledNotificationAsync(`${identifier}-followup`).catch(() => {});
+            }
+
+            await Notifications.scheduleNotificationAsync({
+              identifier,
+              content: {
+                title: "¡Hora de tu Medicamento!",
+                body: `Toma tu ${nombre} - Dosis: ${dosis}`,
+                data: { idMedica: data.idMedica || editingId, nombre },
+                categoryIdentifier: "medicamento",
+                sound: "alarm.mp3",
+              },
+              trigger: {
+                hour,
+                minute,
+                repeats: true,
+              },
+            }).catch((error) => console.error("Error scheduling notification:", error));
+
+            // Schedule follow-up alert 5 minutes later
+            const followupMinute = minute + 5;
+            const followupHour = followupMinute >= 60 ? hour + 1 : hour;
+            const adjustedMinute = followupMinute >= 60 ? followupMinute - 60 : followupMinute;
+
+            await Notifications.scheduleNotificationAsync({
+              identifier: `${identifier}-followup`,
+              content: {
+                title: "Recordatorio: Medicamento Pendiente",
+                body: `No has confirmado la toma de ${nombre}. ¿La tomaste?`,
+                data: { idMedica: data.idMedica || editingId, nombre, isFollowup: true },
+                categoryIdentifier: "medicamento",
+                sound: "alarm.mp3",
+              },
+              trigger: {
+                hour: followupHour,
+                minute: adjustedMinute,
+                repeats: true,
+              },
+            }).catch((error) => console.error("Error scheduling followup notification:", error));
+          } catch (err) {
+            console.warn('Notificaciones no soportadas o fallaron al programar:', err && err.message);
+          }
         }
-
-        await scheduleNotificationAsync({
-          identifier,
-          content: {
-            title: "¡Hora de tu Medicamento!",
-            body: `Toma tu ${nombre} - Dosis: ${dosis}`,
-            data: { idMedica: data.idMedica || editingId, nombre },
-            categoryIdentifier: "medicamento",
-            sound: "alarm.mp3",
-          },
-          trigger: {
-            hour,
-            minute,
-            repeats: true,
-          },
-        }).catch((error) =>
-          console.error("Error scheduling notification:", error)
-        );
-
-        // Schedule follow-up alert 5 minutes later
-        const followupMinute = minute + 5;
-        const followupHour = followupMinute >= 60 ? hour + 1 : hour;
-        const adjustedMinute = followupMinute >= 60 ? followupMinute - 60 : followupMinute;
-
-        await scheduleNotificationAsync({
-          identifier: `${identifier}-followup`,
-          content: {
-            title: "Recordatorio: Medicamento Pendiente",
-            body: `No has confirmado la toma de ${nombre}. ¿La tomaste?`,
-            data: { idMedica: data.idMedica || editingId, nombre, isFollowup: true },
-            categoryIdentifier: "medicamento",
-            sound: "alarm.mp3",
-          },
-          trigger: {
-            hour: followupHour,
-            minute: adjustedMinute,
-            repeats: true,
-          },
-        }).catch((error) =>
-          console.error("Error scheduling followup notification:", error)
-        );
       } else {
         setMessage(data.error || "Error al guardar medicamento");
         setMessageType("error");
@@ -222,15 +220,20 @@ export default function MedicamentosScreen({ navigation }) {
                 setMessageType("success");
                 loadMedicamentos();
 
-                // Cancel notification
-                cancelScheduledNotificationAsync(`medicamento-${id}`).catch(
-                  (error) =>
-                    console.error("Error canceling notification:", error)
-                );
-                cancelScheduledNotificationAsync(`medicamento-${id}-followup`).catch(
-                  (error) =>
-                    console.error("Error canceling followup notification:", error)
-                );
+                // Cancel notification (solo en nativo)
+                if (Platform.OS !== 'web') {
+                  try {
+                    const Notifications = await import('expo-notifications');
+                    Notifications.cancelScheduledNotificationAsync(`medicamento-${id}`).catch((error) =>
+                      console.error("Error canceling notification:", error)
+                    );
+                    Notifications.cancelScheduledNotificationAsync(`medicamento-${id}-followup`).catch((error) =>
+                      console.error("Error canceling followup notification:", error)
+                    );
+                  } catch (err) {
+                    console.warn('No se pudieron cancelar notificaciones (posible web):', err && err.message);
+                  }
+                }
               } else {
                 setMessage("Error al eliminar medicamento");
                 setMessageType("error");

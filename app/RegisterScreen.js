@@ -1,6 +1,16 @@
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { API_ENDPOINTS, buildApiUrl } from "../config/api";
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -10,15 +20,26 @@ export default function RegisterScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleRegister = async () => {
-    if (!fullName || !birthDate || !address || !phoneNumber || !email || !password) {
+    if (
+      !fullName ||
+      !birthDate ||
+      !address ||
+      !phoneNumber ||
+      !email ||
+      !password
+    ) {
       Alert.alert("Error", "Por favor completa todos los campos.");
       return;
     }
 
+    setErrorMessage("");
+    setLoading(true);
     try {
-      const response = await fetch("http://192.168.30.10:3000/api/register", {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.REGISTER), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -31,18 +52,31 @@ export default function RegisterScreen() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        Alert.alert("Registro exitoso", "Tu cuenta ha sido creada correctamente.", [
-          { text: "OK", onPress: () => navigation.navigate("Login") },
-        ]);
+        // Mensaje de éxito y redirección
+        Alert.alert(
+          "Registro exitoso",
+          "¡Registro exitoso! Por favor, inicia sesión.",
+          [{ text: "OK", onPress: () => navigation.navigate("Login") }]
+        );
       } else {
-        Alert.alert("Error", data.message || "No se pudo registrar el usuario.");
+        const msg =
+          data.error ||
+          data.message ||
+          JSON.stringify(data) ||
+          "No se pudo registrar el usuario.";
+        setErrorMessage(msg);
+        Alert.alert("Error", msg);
       }
     } catch (error) {
       console.error("Error en el registro:", error);
-      Alert.alert("Error", "No se pudo conectar con el servidor.");
+      const msg = error.message || "No se pudo conectar con el servidor.";
+      setErrorMessage(msg);
+      Alert.alert("Error", msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,9 +124,24 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Registrarse</Text>
+      <TouchableOpacity
+        style={[styles.button, loading ? styles.buttonDisabled : null]}
+        onPress={handleRegister}
+        disabled={loading}
+      >
+        {loading ? (
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>Cargando...</Text>
+          </View>
+        ) : (
+          <Text style={styles.buttonText}>Registrarse</Text>
+        )}
       </TouchableOpacity>
+
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
       <TouchableOpacity onPress={() => navigation.navigate("Login")}>
         <Text style={styles.link}>¿Ya tienes una cuenta? Inicia sesión</Text>
