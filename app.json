@@ -11,6 +11,14 @@
     "ios": {
       "supportsTablet": true
     },
+    "notification": {
+    "icon": "./assets/images/icon.png",
+    "color": "#2E86C1",
+    "androidMode": "default",
+    "androidCollapsedTitle": "Recordatorio",
+    "androidSound": true
+    },
+
     "android": {
       "package": "com.luisfernando.medalerta",
       "versionCode": 1,

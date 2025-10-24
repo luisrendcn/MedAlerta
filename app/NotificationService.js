@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 
 /* ==========================================================
    ⚙️ CONFIGURACIÓN GENERAL DE NOTIFICACIONES
@@ -34,7 +34,7 @@ export async function pedirPermisoNotificaciones() {
 }
 
 /* ==========================================================
-   🕒 PROGRAMAR RECORDATORIO
+   🕒 PROGRAMAR RECORDATORIO (con sonido personalizado)
 ========================================================== */
 export async function programarRecordatorio(nombre, horario) {
   try {
@@ -61,7 +61,10 @@ export async function programarRecordatorio(nombre, horario) {
       content: {
         title: "💊 Recordatorio de Medicamento",
         body: `Es hora de tomar tu medicamento: ${nombre}`,
-        sound: true,
+        sound: Platform.select({
+          ios: "alarm.mp3",
+          android: "alarm.mp3",
+        }),
         priority: Notifications.AndroidNotificationPriority.HIGH,
       },
       trigger: horaNotificacion,
@@ -110,9 +113,9 @@ export async function registrarToma(medicamento) {
 
     const nuevaToma = {
       id: Date.now(),
-      medicamentoNombre: medicamento.nombre, // 🔹 campo correcto para el historial
-      dosis: medicamento.dosis || "No especificada", // 🔹 agregado para coherencia
-      fecha: new Date().toISOString(), // 🔹 formato ISO válido (evita "Invalid Date")
+      medicamentoNombre: medicamento.nombre,
+      dosis: medicamento.dosis || "No especificada",
+      fecha: new Date().toISOString(),
     };
 
     historial.push(nuevaToma);

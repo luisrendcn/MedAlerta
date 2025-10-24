@@ -1,65 +1,24 @@
+import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { API_ENDPOINTS, buildApiUrl } from "../config/api";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen() {
+  const navigation = useNavigation();
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [address, setAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState(""); // "success" or "error"
 
   const handleRegister = async () => {
     if (!fullName || !birthDate || !address || !phoneNumber || !email || !password) {
-      Alert.alert("Error", "Por favor llena todos los campos");
+      Alert.alert("Error", "Por favor completa todos los campos.");
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert("Error", "Por favor ingresa un email válido");
-      return;
-    }
-
-    if (!/^\d+$/.test(phoneNumber)) {
-      Alert.alert("Error", "El número de teléfono debe contener solo números");
-      return;
-    }
-
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(password)) {
-      Alert.alert(
-        "Error",
-        "La contraseña debe tener mínimo 8 caracteres, incluir una mayúscula y un número"
-      );
-      return;
-    }
-
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(birthDate)) {
-      Alert.alert("Error", "La fecha debe tener formato YYYY-MM-DD (ej: 1990-01-15)");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-    setMessageType("");
     try {
-
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.REGISTER), {
       const response = await fetch("http://192.168.30.10:3000/api/register", {
-
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,175 +33,113 @@ export default function RegisterScreen({ navigation }) {
 
       const data = await response.json();
 
-
       if (response.ok) {
-        setMessage("¡Registro exitoso! Por favor, inicia sesión.");
-        setMessageType("success");
-        setTimeout(() => {
-          navigation.navigate("Login");
-        }, 2000);
+        Alert.alert("Registro exitoso", "Tu cuenta ha sido creada correctamente.", [
+          { text: "OK", onPress: () => navigation.navigate("Login") },
+        ]);
       } else {
-        setMessage(data.error || "Error al registrar paciente");
-        setMessageType("error");
+        Alert.alert("Error", data.message || "No se pudo registrar el usuario.");
       }
-
-      console.log("Respuesta del servidor:", data);
-
-      // Mostrar mensaje de éxito sin depender de response.ok
-      Alert.alert("Éxito", "Paciente registrado correctamente", [
-        { text: "OK", onPress: () => navigation.navigate("Login") },
-      ]);
-
-      // Limpiar formulario
-      setFullName("");
-      setBirthDate("");
-      setAddress("");
-      setPhoneNumber("");
-      setEmail("");
-      setPassword("");
-
     } catch (error) {
-      console.error("Error de conexión:", error);
-      setMessage(
-        "No se pudo conectar con el servidor. Verifica que el API esté funcionando."
-      );
-      setMessageType("error");
-    } finally {
-      setLoading(false);
+      console.error("Error en el registro:", error);
+      Alert.alert("Error", "No se pudo conectar con el servidor.");
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.brand}>Registro de Paciente</Text>
-
-      {message ? (
-        <Text
-          style={[
-            styles.message,
-            messageType === "success" ? styles.success : styles.error,
-          ]}
-        >
-          {message}
-        </Text>
-      ) : null}
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Registro de Usuario</Text>
 
       <TextInput
-        placeholder="Nombre completo"
-        placeholderTextColor="#999"
         style={styles.input}
+        placeholder="Nombre completo"
         value={fullName}
         onChangeText={setFullName}
       />
-
       <TextInput
-        placeholder="Fecha de nacimiento (YYYY-MM-DD)"
-        placeholderTextColor="#999"
         style={styles.input}
+        placeholder="Fecha de nacimiento (YYYY-MM-DD)"
         value={birthDate}
         onChangeText={setBirthDate}
-        maxLength={10}
       />
-
       <TextInput
-        placeholder="Dirección de casa"
-        placeholderTextColor="#999"
         style={styles.input}
+        placeholder="Dirección"
         value={address}
         onChangeText={setAddress}
-        multiline
       />
-
       <TextInput
+        style={styles.input}
         placeholder="Número de celular"
-        placeholderTextColor="#999"
-        style={styles.input}
-        keyboardType="numeric"
         value={phoneNumber}
-        maxLength={10}
-        onChangeText={(text) => {
-          const numericText = text.replace(/[^0-9]/g, "");
-          setPhoneNumber(numericText);
-        }}
+        keyboardType="numeric"
+        onChangeText={setPhoneNumber}
       />
-
       <TextInput
-        placeholder="Correo electrónico"
-        placeholderTextColor="#999"
         style={styles.input}
-        keyboardType="email-address"
-        autoCapitalize="none"
+        placeholder="Correo electrónico"
         value={email}
+        keyboardType="email-address"
         onChangeText={setEmail}
       />
-
       <TextInput
-        placeholder="Contraseña"
-        placeholderTextColor="#999"
         style={styles.input}
-        secureTextEntry
+        placeholder="Contraseña"
         value={password}
+        secureTextEntry
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity
-        style={[styles.btnPrimary, loading && styles.btnDisabled]}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        <Text style={styles.btnText}>
-          {loading ? "Registrando..." : "Registrar Paciente"}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <Text style={styles.buttonText}>Registrarse</Text>
       </TouchableOpacity>
-    </View>
+
+      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+        <Text style={styles.link}>¿Ya tienes una cuenta? Inicia sesión</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 20,
-    backgroundColor: "#f7f9fc",
+    backgroundColor: "#fff",
   },
-  brand: {
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 24,
-    color: "#1E7CFF",
-  },
-  message: {
-    textAlign: "center",
-    marginBottom: 12,
-    padding: 10,
-    borderRadius: 8,
-  },
-  success: {
-    backgroundColor: "#d4edda",
-    color: "#155724",
-  },
-  error: {
-    backgroundColor: "#f8d7da",
-    color: "#721c24",
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#1E90FF",
   },
   input: {
     width: "100%",
-    height: 48,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    backgroundColor: "#fff",
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
   },
-  btnPrimary: {
-    backgroundColor: "#1E7CFF",
-    paddingVertical: 12,
-    borderRadius: 8,
+  button: {
+    backgroundColor: "#1E90FF",
+    padding: 15,
+    borderRadius: 10,
+    width: "100%",
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 10,
   },
-  btnDisabled: { backgroundColor: "#cccccc" },
-  btnText: { color: "#fff", fontWeight: "700" },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  link: {
+    color: "#1E90FF",
+    marginTop: 15,
+    fontSize: 16,
+  },
 });
