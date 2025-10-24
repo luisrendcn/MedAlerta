@@ -11,14 +11,14 @@ app.use(cors());
 app.use(express.json());
 
 // Configuración de PostgreSQL usando los datos de settings.py
+// Use environment variables when available to make configuration flexible
 const pool = new Pool({
-  user: "postgres",
-  host: "192.168.80.65", //  IP 
-  database: "MedAlerta",
-  password: "123456789", //  contraseña   postgres
-  port: 5432,
+  user: process.env.DB_USER || "postgres",
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME || "MedAlerta",
+  password: process.env.DB_PASSWORD || "123456789",
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
 });
-
 
 // Función para verificar si una contraseña está encriptada
 function isPasswordHashed(password) {
@@ -40,14 +40,17 @@ app.post("/api/migrate-passwords", async (req, res) => {
     let migratedCount = 0;
 
     for (const paciente of result.rows) {
-      const password = paciente.Contraseña;
+      // Aceptar columna antigua o nueva (compatibilidad)
+      const password =
+        paciente.Contrasenia || paciente.contrasenia || paciente.Contraseña;
 
       // Si la contraseña no está encriptada, encriptarla
       if (!isPasswordHashed(password)) {
         const hashedPassword = await bcrypt.hash(password, 12); // Usar factor 12 para mayor seguridad
 
+        // Actualizar columna a la nueva columna `Contrasenia`
         await pool.query(
-          'UPDATE "Pacientes" SET "Contraseña" = $1 WHERE "idPaciente" = $2',
+          'UPDATE "Pacientes" SET "Contrasenia" = $1 WHERE "idPaciente" = $2',
           [hashedPassword, paciente.idPaciente]
         );
 
@@ -74,7 +77,17 @@ app.get("/", (req, res) => {
 // Ruta para registrar paciente
 app.post("/api/register", async (req, res) => {
   try {
-    const { NomPaci, FeNaci, DireCasa, NumCel, Email, Contraseña } = req.body;
+    // Aceptar tanto `Contraseña` (frontend antiguo) como `contrasenia` (columna actual)
+    const {
+      NomPaci,
+      FeNaci,
+      DireCasa,
+      NumCel,
+      Email,
+      Contraseña,
+      contrasenia,
+    } = req.body;
+    const plainPassword = Contraseña || contrasenia;
 
     // Verificar si el email ya existe
     const emailCheck = await pool.query(
@@ -87,11 +100,11 @@ app.post("/api/register", async (req, res) => {
     }
 
     // Encriptar contraseña con factor de seguridad 12
-    const hashedPassword = await bcrypt.hash(Contraseña, 12);
+    const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
-    // Insertar nuevo paciente
+    // Insertar nuevo paciente usando la columna `Contrasenia`
     const result = await pool.query(
-      'INSERT INTO "Pacientes" ("NomPaci", "FeNaci", "DireCasa", "NumCel", "Email", "Contraseña") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "idPaciente", "NomPaci", "Email"',
+      'INSERT INTO "Pacientes" ("NomPaci", "FeNaci", "DireCasa", "NumCel", "Email", "Contrasenia") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "idPaciente", "NomPaci", "Email"',
       [NomPaci, FeNaci, DireCasa, NumCel, Email, hashedPassword]
     );
 
@@ -108,7 +121,8 @@ app.post("/api/register", async (req, res) => {
 // Ruta para login
 app.post("/api/login", async (req, res) => {
   try {
-    const { Email, Contraseña } = req.body;
+    const { Email, Contraseña, contrasenia } = req.body;
+    const plainPassword = Contraseña || contrasenia;
 
     // Buscar paciente por email
     const result = await pool.query(
@@ -124,18 +138,20 @@ app.post("/api/login", async (req, res) => {
     let isValidPassword = false;
 
     // Verificar si la contraseña está encriptada
-    if (isPasswordHashed(paciente.Contraseña)) {
+    const storedPassword =
+      paciente.Contrasenia || paciente.contrasenia || paciente.Contraseña;
+    if (isPasswordHashed(storedPassword)) {
       // Contraseña ya encriptada, verificar normalmente
-      isValidPassword = await bcrypt.compare(Contraseña, paciente.Contraseña);
+      isValidPassword = await bcrypt.compare(plainPassword, storedPassword);
     } else {
       // Contraseña no encriptada, verificar directamente y luego encriptar
-      if (paciente.Contraseña === Contraseña) {
+      if (storedPassword === plainPassword) {
         isValidPassword = true;
 
         // Encriptar la contraseña para futuras verificaciones
-        const hashedPassword = await bcrypt.hash(Contraseña, 12);
+        const hashedPassword = await bcrypt.hash(plainPassword, 12);
         await pool.query(
-          'UPDATE "Pacientes" SET "Contraseña" = $1 WHERE "idPaciente" = $2',
+          'UPDATE "Pacientes" SET "Contrasenia" = $1 WHERE "idPaciente" = $2',
           [hashedPassword, paciente.idPaciente]
         );
 
@@ -265,7 +281,9 @@ app.post("/api/medicamentos", async (req, res) => {
     const { idPaciente, nombre, dosis, horario } = req.body;
 
     if (!idPaciente || !nombre || !dosis || !horario) {
-      return res.status(400).json({ error: "Todos los campos son obligatorios" });
+      return res
+        .status(400)
+        .json({ error: "Todos los campos son obligatorios" });
     }
 
     const result = await pool.query(
@@ -290,7 +308,9 @@ app.put("/api/medicamentos/:id", async (req, res) => {
     const { nombre, dosis, horario } = req.body;
 
     if (!nombre || !dosis || !horario) {
-      return res.status(400).json({ error: "Todos los campos son obligatorios" });
+      return res
+        .status(400)
+        .json({ error: "Todos los campos son obligatorios" });
     }
 
     const result = await pool.query(
@@ -341,15 +361,19 @@ app.post("/api/log-dose", async (req, res) => {
     const { idMedica, estado } = req.body;
 
     if (!idMedica || !estado) {
-      return res.status(400).json({ error: "idMedica y estado son obligatorios" });
+      return res
+        .status(400)
+        .json({ error: "idMedica y estado son obligatorios" });
     }
 
-    if (!['atendida', 'no_atendida'].includes(estado)) {
-      return res.status(400).json({ error: "Estado debe ser 'atendida' o 'no_atendida'" });
+    if (!["atendida", "no_atendida"].includes(estado)) {
+      return res
+        .status(400)
+        .json({ error: "Estado debe ser 'atendida' o 'no_atendida'" });
     }
 
     const result = await pool.query(
-      'INSERT INTO dosis_log (id_medica, hora_alerta, estado) VALUES ($1, CURRENT_TIMESTAMP, $2) RETURNING *',
+      "INSERT INTO dosis_log (id_medica, hora_alerta, estado) VALUES ($1, CURRENT_TIMESTAMP, $2) RETURNING *",
       [idMedica, estado]
     );
 

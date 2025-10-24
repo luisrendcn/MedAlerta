@@ -12,13 +12,15 @@ const pool = new Pool({
 async function checkDatabaseRecords() {
   try {
     console.log("🔍 Verificando registros en la base de datos...");
-    
+
     // Obtener todos los pacientes
-    const result = await pool.query('SELECT * FROM "Pacientes" ORDER BY "idPaciente"');
-    
+    const result = await pool.query(
+      'SELECT * FROM "Pacientes" ORDER BY "idPaciente"'
+    );
+
     console.log(`📊 Total de pacientes registrados: ${result.rows.length}`);
     console.log("\n📋 Lista de pacientes:");
-    
+
     result.rows.forEach((paciente, index) => {
       console.log(`\n${index + 1}. Paciente ID: ${paciente.idPaciente}`);
       console.log(`   Nombre: ${paciente.NomPaci}`);
@@ -26,12 +28,16 @@ async function checkDatabaseRecords() {
       console.log(`   Fecha Nacimiento: ${paciente.FeNaci}`);
       console.log(`   Dirección: ${paciente.DireCasa}`);
       console.log(`   Teléfono: ${paciente.NumCel}`);
-      console.log(`   Contraseña: ${paciente.Contraseña.substring(0, 20)}... (encriptada)`);
+      const pwd =
+        paciente.Contrasenia ||
+        paciente.contrasenia ||
+        paciente.Contraseña ||
+        "";
+      console.log(`   Contraseña: ${pwd.substring(0, 20)}... (encriptada)`);
       console.log(`   Creado: ${paciente.created_at}`);
     });
-    
+
     console.log("\n✅ Verificación completada");
-    
   } catch (error) {
     console.error("❌ Error al verificar registros:", error.message);
   } finally {
