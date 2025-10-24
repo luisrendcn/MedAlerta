@@ -149,6 +149,20 @@ app.post("/api/login", async (req, res) => {
     }
 
     // Login exitoso
+    // Guardar registro de sesión
+    try {
+      await pool.query(
+        'INSERT INTO "Sesiones" ("idPaciente", "ipAddress", "userAgent") VALUES ($1, $2, $3)',
+        [paciente.idPaciente, req.ip, req.get("User-Agent")]
+      );
+      console.log(
+        `📝 Sesión registrada para paciente ID: ${paciente.idPaciente}`
+      );
+    } catch (sessionError) {
+      console.error("Error al guardar sesión:", sessionError);
+      // No fallar el login por error en logging
+    }
+
     res.json({
       message: "Login exitoso",
       paciente: {
@@ -225,11 +239,145 @@ app.get("/api/password-status", async (req, res) => {
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 API MedAlerta corriendo en http://localhost:${PORT}`);
+// Endpoints para medicamentos
+
+// Listar medicamentos de un paciente
+app.get("/api/medicamentos/:idPaciente", async (req, res) => {
+  try {
+    const { idPaciente } = req.params;
+
+    const result = await pool.query(
+      'SELECT * FROM "Medicamentos" WHERE "idPaciente" = $1 ORDER BY "horario"',
+      [idPaciente]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener medicamentos:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Crear medicamento
+app.post("/api/medicamentos", async (req, res) => {
+  try {
+    const { idPaciente, nombre, dosis, horario } = req.body;
+
+    if (!idPaciente || !nombre || !dosis || !horario) {
+      return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO "Medicamentos" ("idPaciente", "NomMedica", "Dosis", "horario") VALUES ($1, $2, $3, $4) RETURNING *',
+      [idPaciente, nombre, dosis, horario]
+    );
+
+    res.status(201).json({
+      message: "Medicamento registrado exitosamente",
+      medicamento: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error al crear medicamento:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Editar medicamento
+app.put("/api/medicamentos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, dosis, horario } = req.body;
+
+    if (!nombre || !dosis || !horario) {
+      return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+
+    const result = await pool.query(
+      'UPDATE "Medicamentos" SET "NomMedica" = $1, "Dosis" = $2, "horario" = $3, "updated_at" = CURRENT_TIMESTAMP WHERE "idMedica" = $4 RETURNING *',
+      [nombre, dosis, horario, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Medicamento no encontrado" });
+    }
+
+    res.json({
+      message: "Medicamento actualizado exitosamente",
+      medicamento: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error al actualizar medicamento:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Eliminar medicamento
+app.delete("/api/medicamentos/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'DELETE FROM "Medicamentos" WHERE "idMedica" = $1 RETURNING *',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Medicamento no encontrado" });
+    }
+
+    res.json({
+      message: "Medicamento eliminado exitosamente",
+    });
+  } catch (error) {
+    console.error("Error al eliminar medicamento:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Endpoint para log de dosis
+app.post("/api/log-dose", async (req, res) => {
+  try {
+    const { idMedica, estado } = req.body;
+
+    if (!idMedica || !estado) {
+      return res.status(400).json({ error: "idMedica y estado son obligatorios" });
+    }
+
+    if (!['atendida', 'no_atendida'].includes(estado)) {
+      return res.status(400).json({ error: "Estado debe ser 'atendida' o 'no_atendida'" });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO dosis_log (id_medica, hora_alerta, estado) VALUES ($1, CURRENT_TIMESTAMP, $2) RETURNING *',
+      [idMedica, estado]
+    );
+
+    res.status(201).json({
+      message: "Log de dosis registrado",
+      log: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error al loggear dosis:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Iniciar servidor - Escuchar en todas las interfaces (0.0.0.0)
+const server = app.listen(PORT, "0.0.0.0", () => {
+  // Mostrar información exacta de bind para depuración de red
+  const addr = server.address();
+  const host = addr && addr.address ? addr.address : "unknown";
+  const port = addr && addr.port ? addr.port : PORT;
+
+  console.log(
+    `\n✅ Servidor configurado correctamente, esperando conexiones...`
+  );
+  console.log(`🚀 API MedAlerta corriendo en http://${host}:${port}`);
   console.log(`📊 Conectado a PostgreSQL - Base de datos: MedAlerta`);
   console.log(`⏰ Servidor iniciado en: ${new Date().toLocaleString()}`);
+  console.log(
+    `ℹ️ Dirección de bind detectada por Node: ${JSON.stringify(addr)}`
+  );
 });
 
 // Manejo de errores de conexión a la base de datos

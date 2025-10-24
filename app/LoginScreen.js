@@ -1,28 +1,33 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import {
-  Alert,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { buildApiUrl, API_ENDPOINTS } from "../config/api";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // "success" or "error"
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Por favor ingresa email y contraseña");
+      setMessage("Por favor ingresa email y contraseña");
+      setMessageType("error");
       return;
     }
 
     setLoading(true);
+    setMessage("");
+    setMessageType("");
     try {
-      const response = await fetch("http://localhost:3000/api/login", {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.LOGIN), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,22 +44,19 @@ export default function LoginScreen({ navigation }) {
         // Guardar datos del paciente para uso posterior
         await AsyncStorage.setItem("paciente", JSON.stringify(data.paciente));
 
-        Alert.alert("Éxito", `Bienvenido ${data.paciente.NomPaci}`, [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] }),
-          },
-        ]);
+        setMessage(`Bienvenido ${data.paciente.NomPaci}`);
+        setMessageType("success");
+        setTimeout(() => {
+          navigation.reset({ index: 0, routes: [{ name: "Medicamentos" }] });
+        }, 2000);
       } else {
-        Alert.alert("Error", data.error || "Credenciales incorrectas");
+        setMessage(data.error || "Credenciales incorrectas");
+        setMessageType("error");
       }
     } catch (error) {
       console.error("Error de conexión:", error);
-      Alert.alert(
-        "Error",
-        "No se pudo conectar con el servidor. Verifica que el API esté funcionando."
-      );
+      setMessage("No se pudo conectar con el servidor. Verifica que el API esté funcionando.");
+      setMessageType("error");
     } finally {
       setLoading(false);
     }
@@ -64,6 +66,12 @@ export default function LoginScreen({ navigation }) {
     <View style={styles.container}>
       <Text style={styles.brand}>MedAlerta</Text>
       <Text style={styles.subtitle}>Iniciar Sesión</Text>
+
+      {message ? (
+        <Text style={[styles.message, messageType === "success" ? styles.success : styles.error]}>
+          {message}
+        </Text>
+      ) : null}
 
       {/* Campos */}
       <TextInput
@@ -138,6 +146,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
     color: "#333",
+  },
+  message: {
+    textAlign: "center",
+    marginBottom: 12,
+    padding: 10,
+    borderRadius: 8,
+  },
+  success: {
+    backgroundColor: "#d4edda",
+    color: "#155724",
+  },
+  error: {
+    backgroundColor: "#f8d7da",
+    color: "#721c24",
   },
   input: {
     width: "100%",
