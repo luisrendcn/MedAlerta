@@ -21,33 +21,22 @@ export default function RegisterScreen({ navigation }) {
   const [messageType, setMessageType] = useState(""); // "success" or "error"
 
   const handleRegister = async () => {
-    // Validar que todos los campos estén llenos
-    if (
-      !fullName ||
-      !birthDate ||
-      !address ||
-      !phoneNumber ||
-      !email ||
-      !password
-    ) {
+    if (!fullName || !birthDate || !address || !phoneNumber || !email || !password) {
       Alert.alert("Error", "Por favor llena todos los campos");
       return;
     }
 
-    // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert("Error", "Por favor ingresa un email válido");
       return;
     }
 
-    // Validar número de teléfono (solo números)
     if (!/^\d+$/.test(phoneNumber)) {
       Alert.alert("Error", "El número de teléfono debe contener solo números");
       return;
     }
 
-    // Validar contraseña: mínimo 8 caracteres, al menos una mayúscula y un número
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(password)) {
       Alert.alert(
@@ -57,13 +46,9 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    // Validar formato de fecha (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(birthDate)) {
-      Alert.alert(
-        "Error",
-        "La fecha debe tener formato YYYY-MM-DD (ej: 1990-01-15)"
-      );
+      Alert.alert("Error", "La fecha debe tener formato YYYY-MM-DD (ej: 1990-01-15)");
       return;
     }
 
@@ -71,11 +56,12 @@ export default function RegisterScreen({ navigation }) {
     setMessage("");
     setMessageType("");
     try {
+
       const response = await fetch(buildApiUrl(API_ENDPOINTS.REGISTER), {
+      const response = await fetch("http://192.168.30.10:3000/api/register", {
+
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           NomPaci: fullName,
           FeNaci: birthDate,
@@ -88,6 +74,7 @@ export default function RegisterScreen({ navigation }) {
 
       const data = await response.json();
 
+
       if (response.ok) {
         setMessage("¡Registro exitoso! Por favor, inicia sesión.");
         setMessageType("success");
@@ -98,6 +85,22 @@ export default function RegisterScreen({ navigation }) {
         setMessage(data.error || "Error al registrar paciente");
         setMessageType("error");
       }
+
+      console.log("Respuesta del servidor:", data);
+
+      // Mostrar mensaje de éxito sin depender de response.ok
+      Alert.alert("Éxito", "Paciente registrado correctamente", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
+
+      // Limpiar formulario
+      setFullName("");
+      setBirthDate("");
+      setAddress("");
+      setPhoneNumber("");
+      setEmail("");
+      setPassword("");
+
     } catch (error) {
       console.error("Error de conexión:", error);
       setMessage(
@@ -126,6 +129,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Nombre completo"
+        placeholderTextColor="#999"
         style={styles.input}
         value={fullName}
         onChangeText={setFullName}
@@ -133,6 +137,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Fecha de nacimiento (YYYY-MM-DD)"
+        placeholderTextColor="#999"
         style={styles.input}
         value={birthDate}
         onChangeText={setBirthDate}
@@ -141,6 +146,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Dirección de casa"
+        placeholderTextColor="#999"
         style={styles.input}
         value={address}
         onChangeText={setAddress}
@@ -149,11 +155,12 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Número de celular"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="numeric"
         value={phoneNumber}
+        maxLength={10}
         onChangeText={(text) => {
-          // Solo permite números
           const numericText = text.replace(/[^0-9]/g, "");
           setPhoneNumber(numericText);
         }}
@@ -161,6 +168,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Correo electrónico"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
@@ -170,6 +178,7 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Contraseña"
+        placeholderTextColor="#999"
         style={styles.input}
         secureTextEntry
         value={password}

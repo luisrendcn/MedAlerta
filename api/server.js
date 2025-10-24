@@ -13,11 +13,12 @@ app.use(express.json());
 // Configuración de PostgreSQL usando los datos de settings.py
 const pool = new Pool({
   user: "postgres",
-  host: "localhost",
+  host: "192.168.80.65", //  IP 
   database: "MedAlerta",
-  password: "123456789",
+  password: "123456789", //  contraseña   postgres
   port: 5432,
 });
+
 
 // Función para verificar si una contraseña está encriptada
 function isPasswordHashed(password) {

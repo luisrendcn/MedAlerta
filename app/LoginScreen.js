@@ -76,6 +76,7 @@ export default function LoginScreen({ navigation }) {
       {/* Campos */}
       <TextInput
         placeholder="usuario@correo.com"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
@@ -85,6 +86,7 @@ export default function LoginScreen({ navigation }) {
 
       <TextInput
         placeholder="Contraseña"
+        placeholderTextColor="#999"
         style={styles.input}
         secureTextEntry
         value={password}
@@ -102,9 +104,19 @@ export default function LoginScreen({ navigation }) {
         </Text>
       </TouchableOpacity>
 
+      {/* 🔒 Botón pequeño de superusuario */}
+      <TouchableOpacity
+        onPress={() =>
+          navigation.reset({ index: 0, routes: [{ name: "Dashboard" }] })
+        }
+        style={styles.superUserButton}
+      >
+        <Text style={styles.superUserText}>Entrar como superusuario</Text>
+      </TouchableOpacity>
+
+
       {/* Fila de botones secundarios */}
       <View style={styles.row}>
-        {/* Botón Registrarse */}
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => navigation.navigate("Register")}
@@ -112,7 +124,6 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.secondaryButtonText}>Registrarse</Text>
         </TouchableOpacity>
 
-        {/* Botón Olvidó contraseña */}
         <TouchableOpacity style={styles.secondaryButton}>
           <Text style={styles.secondaryButtonText}>¿Olvidó su contraseña?</Text>
         </TouchableOpacity>
@@ -120,7 +131,7 @@ export default function LoginScreen({ navigation }) {
 
       {/* Footer */}
       <Text style={styles.footer}>
-        © 2025 MedAlerta. proyecto de Ingenieria de Software.
+        © 2025 MedAlerta. Proyecto de Ingeniería de Software.
       </Text>
     </View>
   );
@@ -130,22 +141,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 40,
     backgroundColor: "#f7f9fc",
   },
   brand: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 8,
     color: "#1E7CFF",
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "500",
     textAlign: "center",
-    marginBottom: 20,
-    color: "#333",
+    marginBottom: 40,
+    color: "#666",
   },
   message: {
     textAlign: "center",
@@ -162,23 +173,35 @@ const styles = StyleSheet.create({
     color: "#721c24",
   },
   input: {
-    width: "100%",
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 12,
+    width: "80%",
+    height: 50,
+    borderWidth: 2,
+    borderColor: "#e1e5e9",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
     backgroundColor: "#fff",
+    fontSize: 16,
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-
-  // 🔵 Botón principal
   loginButton: {
     backgroundColor: "#007BFF",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
+    width: "80%",
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   loginButtonDisabled: {
     backgroundColor: "#cccccc",
@@ -188,18 +211,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-
-  // 🔵 Botones secundarios en fila
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: 20,
+    width: "80%",
+    alignSelf: "center",
   },
   secondaryButton: {
     flex: 1,
     backgroundColor: "#E6F0FF",
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     marginHorizontal: 5,
   },
@@ -209,8 +232,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-
-  // Footer
+  // 🔹 Botón de superusuario
+  superUserButton: {
+    alignSelf: "center",
+    marginTop: 10,
+    opacity: 0.6,
+  },
+  superUserText: {
+    fontSize: 12,
+    color: "#999",
+    textDecorationLine: "underline",
+  },
   footer: {
     marginTop: 30,
     fontSize: 12,

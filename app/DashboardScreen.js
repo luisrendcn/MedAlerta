@@ -54,9 +54,10 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Bienvenido a MedAlerta 🎉</Text>
+      <Text style={styles.title}>Panel de Superusuario ⚙️</Text>
 
       <View style={styles.buttonContainer}>
+        {/* Botones existentes */}
         <TouchableOpacity
           style={styles.utilityBtn}
           onPress={checkPasswordStatus}
@@ -68,8 +69,31 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.utilityBtnText}>🔐 Encriptar Contraseñas</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btn} onPress={handleLogout}>
-          <Text style={styles.btnText}>Cerrar Sesión</Text>
+        {/* NUEVOS BOTONES */}
+        <TouchableOpacity
+          style={styles.navBtn}
+          onPress={() => navigation.navigate("MedicineForm")}
+        >
+          <Text style={styles.navBtnText}>➕ Agregar Medicamento</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navBtn}
+          onPress={() => navigation.navigate("MedicineList")}
+        >
+          <Text style={styles.navBtnText}>📋 Lista de Medicamentos</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navBtn}
+          onPress={() => navigation.navigate("DoseHistory")}
+        >
+          <Text style={styles.navBtnText}>⏱ Historial de Dosis</Text>
+        </TouchableOpacity>
+
+        {/* Botón de cerrar sesión */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutBtnText}>Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -83,15 +107,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f7f9fc",
   },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20, color: "#333" },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#333",
+  },
   buttonContainer: {
     width: "80%",
-    gap: 15,
+    gap: 12,
   },
   utilityBtn: {
     backgroundColor: "#007BFF",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
   },
@@ -100,15 +128,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
-  btn: {
+  navBtn: {
+    backgroundColor: "#28A745",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  navBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  logoutBtn: {
     backgroundColor: "#FF3B30",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 10,
   },
-  btnText: {
+  logoutBtnText: {
     color: "#fff",
     fontWeight: "700",
   },

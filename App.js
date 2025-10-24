@@ -1,3 +1,4 @@
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect } from 'react';
@@ -17,6 +18,11 @@ import { buildApiUrl, API_ENDPOINTS } from './config/api';
 
 const Stack = createNativeStackNavigator();
 
+import * as Notifications from "expo-notifications";
+import { useEffect } from "react";
+import AppNavigator from "./app/AppNavigator";
+
+
 setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -27,6 +33,7 @@ setNotificationHandler({
 
 export default function App() {
   useEffect(() => {
+ 
     // Configurar categoría de notificaciones
     setNotificationCategoryAsync('medicamento', [
       {
@@ -124,4 +131,15 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
+
+    const prepararNotificaciones = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        alert("Por favor, habilita las notificaciones para recibir recordatorios.");
+      }
+    };
+    prepararNotificaciones();
+  }, []);
+
+  return <AppNavigator />;
 }
