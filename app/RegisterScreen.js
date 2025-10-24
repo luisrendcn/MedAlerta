@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_ENDPOINTS, buildApiUrl } from "../config/api";
 
 export default function RegisterScreen({ navigation }) {
   const [fullName, setFullName] = useState("");
@@ -16,6 +17,8 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // "success" or "error"
 
   const handleRegister = async () => {
     if (!fullName || !birthDate || !address || !phoneNumber || !email || !password) {
@@ -50,8 +53,13 @@ export default function RegisterScreen({ navigation }) {
     }
 
     setLoading(true);
+    setMessage("");
+    setMessageType("");
     try {
+
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.REGISTER), {
       const response = await fetch("http://192.168.30.10:3000/api/register", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,6 +73,19 @@ export default function RegisterScreen({ navigation }) {
       });
 
       const data = await response.json();
+
+
+      if (response.ok) {
+        setMessage("¡Registro exitoso! Por favor, inicia sesión.");
+        setMessageType("success");
+        setTimeout(() => {
+          navigation.navigate("Login");
+        }, 2000);
+      } else {
+        setMessage(data.error || "Error al registrar paciente");
+        setMessageType("error");
+      }
+
       console.log("Respuesta del servidor:", data);
 
       // Mostrar mensaje de éxito sin depender de response.ok
@@ -79,12 +100,13 @@ export default function RegisterScreen({ navigation }) {
       setPhoneNumber("");
       setEmail("");
       setPassword("");
+
     } catch (error) {
       console.error("Error de conexión:", error);
-      Alert.alert(
-        "Error",
+      setMessage(
         "No se pudo conectar con el servidor. Verifica que el API esté funcionando."
       );
+      setMessageType("error");
     } finally {
       setLoading(false);
     }
@@ -93,6 +115,17 @@ export default function RegisterScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.brand}>Registro de Paciente</Text>
+
+      {message ? (
+        <Text
+          style={[
+            styles.message,
+            messageType === "success" ? styles.success : styles.error,
+          ]}
+        >
+          {message}
+        </Text>
+      ) : null}
 
       <TextInput
         placeholder="Nombre completo"
@@ -178,6 +211,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
     color: "#1E7CFF",
+  },
+  message: {
+    textAlign: "center",
+    marginBottom: 12,
+    padding: 10,
+    borderRadius: 8,
+  },
+  success: {
+    backgroundColor: "#d4edda",
+    color: "#155724",
+  },
+  error: {
+    backgroundColor: "#f8d7da",
+    color: "#721c24",
   },
   input: {
     width: "100%",

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { buildApiUrl, API_ENDPOINTS } from "../config/api";
 
 export default function DashboardScreen({ navigation }) {
   const handleLogout = async () => {
@@ -12,7 +13,7 @@ export default function DashboardScreen({ navigation }) {
 
   const checkPasswordStatus = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/password-status");
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.PASSWORD_STATUS));
       const data = await response.json();
 
       Alert.alert(
@@ -29,7 +30,7 @@ export default function DashboardScreen({ navigation }) {
   const migratePasswords = async () => {
     try {
       const response = await fetch(
-        "http://localhost:3000/api/migrate-passwords",
+        buildApiUrl(API_ENDPOINTS.MIGRATE_PASSWORDS),
         {
           method: "POST",
           headers: {
