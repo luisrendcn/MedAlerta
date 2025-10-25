@@ -47,7 +47,8 @@ export default function LoginScreen({ navigation }) {
         setMessage(`Bienvenido ${data.paciente.NomPaci}`);
         setMessageType("success");
         setTimeout(() => {
-          navigation.reset({ index: 0, routes: [{ name: "Medicamentos" }] });
+          // Usar el nombre de ruta correcto definido en AppNavigator
+          navigation.reset({ index: 0, routes: [{ name: "MedicineList" }] });
         }, 2000);
       } else {
         setMessage(data.error || "Credenciales incorrectas");
